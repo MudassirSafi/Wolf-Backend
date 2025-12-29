@@ -1,0 +1,14 @@
+. Review can added by real customer only
+ . Produt page like Amazon 
+. Alltrade.ae  selling out past in description the product card
+. Courier JandT 
+. invioce uploading by Admin for curstomer that he can check 
+. best seller products
+
+. if i Want to create a product description from any other platform like amazon and images directly in my website
+. Color and size variations in each product card 
+. add new catagory by admin
+. Bullet points  e.g   About this item
+   Nike G.T. HUSTLE ACADEMY Mens LACED SHOES, Black/Total Orange-Laser Orange, 42.5
+
+. Assign unique number to each product automatically
