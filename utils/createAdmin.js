@@ -1,4 +1,4 @@
-// backend/utils/createAdmin.js
+// backend/utils/createAdmin.js - FIXED FOR ATLAS/RENDER
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 
@@ -7,16 +7,16 @@ export const createDefaultAdmin = async () => {
     const adminEmail = process.env.ADMIN_EMAIL || "2wolf@gmail.com";
     const adminPassword = process.env.ADMIN_PASSWORD || "2Wolfdubai";
     const adminName = process.env.ADMIN_NAME || "2Wolf Admin";
-    
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: adminEmail });
-    
-    if (existingAdmin) {
-      console.log("✅ Default admin already exists:", adminEmail);
-      return;
+
+    console.log("🔍 Checking for admin user:", adminEmail);
+
+    // FORCE DELETE any existing/broken admin with this email
+    const deleted = await User.deleteMany({ email: adminEmail });
+    if (deleted.deletedCount > 0) {
+      console.log(`🗑️ Removed ${deleted.deletedCount} old/broken admin record(s)`);
     }
 
-    // Create admin user
+    // Now create fresh admin
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
@@ -25,14 +25,16 @@ export const createDefaultAdmin = async () => {
       email: adminEmail,
       password: hashedPassword,
       role: "admin",
+      isVerified: true, // Optional: auto-verify admin
     });
 
     await admin.save();
+
     console.log("✅ Default admin created successfully!");
     console.log("📧 Email:", adminEmail);
     console.log("🔑 Password:", adminPassword);
-    console.log("⚠️  Remember to change the password in production!");
+    console.log("⚠️ CHANGE THIS PASSWORD IMMEDIATELY IN PRODUCTION!");
   } catch (error) {
-    console.error("❌ Error creating default admin:", error);
+    console.error("❌ Error creating default admin:", error.message);
   }
 };
