@@ -108,7 +108,18 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173", credentials: true }));
+
+// ✅✅ FIXED CORS - NOW ALLOWS VERCEL REQUESTS
+app.use(cors({ 
+  origin: [
+    process.env.FRONTEND_URL || "http://localhost:5173",
+    "https://2-wolf-1kt2.vercel.app",
+    "https://*.vercel.app"
+  ], 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // ✅ Initialize Passport
 app.use(passport.initialize());
