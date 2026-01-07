@@ -127,6 +127,11 @@ app.use(passport.initialize());
 // ✅ MongoDB connection
 await connectDB();
 
+// ✅✅✅ CREATE DEFAULT ADMIN - THIS WAS MISSING!
+console.log('\n🔐 Setting up admin account...');
+await createDefaultAdmin();
+console.log('✅ Admin setup complete!\n');
+
 // ✅ Routes
 app.use("/api/users", authRoutes);
 app.use("/api/auth", oauthRoutes);
