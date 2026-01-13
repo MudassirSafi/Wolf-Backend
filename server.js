@@ -1,7 +1,9 @@
+// ✅ wolf-backend/server.js - COMPLETE FINAL VERSION
 import dotenv from "dotenv";
 
 // ✅ Load environment variables FIRST
 dotenv.config();
+
 import connectDB from "./config/db.js";
 import express from "express";
 import mongoose from "mongoose";
@@ -10,6 +12,8 @@ import helmet from "helmet";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import bcrypt from "bcryptjs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Import models and routes
 import User from "./models/User.js";
@@ -27,9 +31,13 @@ import customerRoutes from "./routes/customerRoutes.js";
 import invoiceRoutes from './routes/invoiceRoutes.js';
 import { createDefaultAdmin } from "./utils/createAdmin.js";
 
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
-// ✅ Configure Passport Google Strategy
+// ==================== GOOGLE OAUTH CONFIGURATION ====================
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000";
@@ -38,7 +46,9 @@ console.log('\n🔍 ENVIRONMENT CHECK:');
 console.log('GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID ? '✅ Loaded' : '❌ MISSING');
 console.log('GOOGLE_CLIENT_SECRET:', GOOGLE_CLIENT_SECRET ? '✅ Loaded' : '❌ MISSING');
 console.log('FRONTEND_URL:', process.env.FRONTEND_URL || 'Using default');
-console.log('BACKEND_URL:', BACKEND_URL || 'Using default\n');
+console.log('BACKEND_URL:', BACKEND_URL || 'Using default');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Loaded' : '⚠️  Using default');
+console.log('MONGO_URI:', process.env.MONGO_URI ? '✅ Loaded' : '❌ MISSING\n');
 
 if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   console.log("✅ Configuring Google OAuth Strategy...");
@@ -101,38 +111,50 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
     }
   });
 
-  console.log("✅ Google OAuth Strategy configured successfully!\n");
+  console.log("✅ Google OAuth Strategy configured successfully!");
+  console.log("⚡ Sessions disabled for faster OAuth performance\n");
 }
 
-// ✅ Middleware
+// ==================== MIDDLEWARE SETUP ====================
 app.use(helmet());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// ✅✅ FIXED CORS - NOW ALLOWS VERCEL REQUESTS
+// ✅ CORS Configuration - Allows Vercel + Local
 app.use(cors({ 
   origin: [
     process.env.FRONTEND_URL || "http://localhost:5173",
     "https://2-wolf-1kt2.vercel.app",
-    "https://*.vercel.app"
+    "https://*.vercel.app",
+    /\.vercel\.app$/  // ✅ Allow all Vercel subdomains
   ], 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// ✅ Initialize Passport
+// ✅ Serve static uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ✅ Initialize Passport (without sessions for JWT)
 app.use(passport.initialize());
 
-// ✅ MongoDB connection
+// ==================== DATABASE CONNECTION ====================
+console.log('\n🔌 Connecting to MongoDB...');
 await connectDB();
 
-// ✅✅✅ CREATE DEFAULT ADMIN - THIS WAS MISSING!
+// ==================== CREATE DEFAULT ADMIN ====================
 console.log('\n🔐 Setting up admin account...');
-await createDefaultAdmin();
-console.log('✅ Admin setup complete!\n');
+try {
+  await createDefaultAdmin();
+  console.log('✅ Admin setup complete!\n');
+} catch (error) {
+  console.error('❌ Admin setup failed:', error.message);
+}
 
-// ✅ Routes
+// ==================== API ROUTES ====================
+console.log('🛣️  Setting up routes...');
+
 app.use("/api/users", authRoutes);
 app.use("/api/auth", oauthRoutes);
 app.use("/api/cart", cartRoutes);
@@ -146,14 +168,16 @@ app.use('/api/shipping', shippingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/invoices', invoiceRoutes);
 
-app.use('/uploads', express.static('uploads'));
+console.log('✅ Routes configured\n');
 
-// ✅ Health check
+// ==================== HEALTH CHECK ROUTES ====================
 app.get("/", (req, res) => {
   res.json({ 
     message: "2Wolf Backend API is running!",
+    version: "1.0.0",
     database: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected",
-    googleOAuth: GOOGLE_CLIENT_ID ? "Configured" : "Not Configured"
+    googleOAuth: GOOGLE_CLIENT_ID ? "Configured" : "Not Configured",
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -164,26 +188,77 @@ app.get("/api/status", (req, res) => {
     services: {
       database: mongoose.connection.readyState === 1,
       googleOAuth: !!GOOGLE_CLIENT_ID,
-      stripe: !!process.env.STRIPE_SECRET_KEY
-    }
+      stripe: !!process.env.STRIPE_SECRET_KEY,
+      uploads: true
+    },
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// ✅ 404 handler
-app.use((req, res) => res.status(404).json({ message: "Route not found" }));
+// ==================== ERROR HANDLERS ====================
+// 404 handler
+app.use((req, res) => {
+  console.log('⚠️  404 Not Found:', req.method, req.url);
+  res.status(404).json({ 
+    success: false,
+    message: "Route not found",
+    path: req.url,
+    method: req.method
+  });
+});
 
-// ✅ Error handler
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error("Server error:", err);
-  res.status(500).json({ 
-    message: "Internal server error",
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  console.error("❌ Server error:", err);
+  
+  // Multer errors
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      success: false,
+      message: "File size too large. Maximum 5MB allowed."
+    });
+  }
+  
+  if (err.code === "LIMIT_UNEXPECTED_FILE") {
+    return res.status(400).json({
+      success: false,
+      message: "Too many files uploaded. Maximum 10 allowed."
+    });
+  }
+  
+  res.status(err.status || 500).json({ 
+    success: false,
+    message: err.message || "Internal server error",
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
-// ✅ Server start
+// ==================== SERVER START ====================
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
+  console.log('\n' + '='.repeat(60));
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🔐 Google OAuth: ${GOOGLE_CLIENT_ID ? '✅ Ready' : '❌ Not Configured'}\n`);
+  console.log('='.repeat(60));
+  console.log('📁 Uploads directory:', path.join(__dirname, 'uploads'));
+  console.log('🔐 Google OAuth:', GOOGLE_CLIENT_ID ? '✅ Ready (Fast Mode)' : '❌ Not Configured');
+  console.log('🔑 JWT Secret:', process.env.JWT_SECRET ? '✅ Configured' : '⚠️  Using default');
+  console.log('💾 Database:', mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Disconnected');
+  console.log('🌐 CORS:', 'Enabled for Vercel + Local');
+  console.log('='.repeat(60) + '\n');
+});
+
+// ==================== GRACEFUL SHUTDOWN ====================
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err);
+  console.log("⚠️  Server shutting down due to unhandled promise rejection");
+  process.exit(1);
+});
+
+process.on('SIGTERM', () => {
+  console.log('👋 SIGTERM received, shutting down gracefully');
+  mongoose.connection.close(() => {
+    console.log('💾 MongoDB connection closed');
+    process.exit(0);
+  });
 });

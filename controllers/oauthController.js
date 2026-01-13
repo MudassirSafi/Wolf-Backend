@@ -1,16 +1,16 @@
-// backend/controllers/oauthController.js - CLEAN (Google Only)
+// ==========================================
+// 📁 FILE 4: backend/controllers/oauthController.js - OPTIMIZED
+// ==========================================
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret_dev_change_this";
+const JWT_SECRET = process.env.JWT_SECRET || "MuhibAfridi2WolfSecretKey";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 const createToken = (user) =>
   jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
-// Google OAuth Callback
 export const googleCallback = async (req, res) => {
   try {
-    // User is already attached to req.user by passport
     const user = req.user;
     
     if (!user) {
@@ -20,17 +20,28 @@ export const googleCallback = async (req, res) => {
 
     const token = createToken(user);
     
-    // DEBUG: Show what secret is being used
-console.log("🔑 JWT_SECRET used for signing:", JWT_SECRET.substring(0, 10) + "...");
-console.log("🎫 Token created:", token.substring(0, 30) + "...");
-
-    console.log("✅ Google OAuth success for:", user.email);
-    console.log("🔄 Redirecting to:", `${FRONTEND_URL}/auth/callback`);
+    console.log('\n=== GOOGLE OAUTH CALLBACK ===');
+    console.log("✅ OAuth success for:", user.email);
+    console.log("👤 User:", { id: user._id, name: user.name, role: user.role });
     
-    // Redirect to frontend with token and role
-    res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}&role=${user.role}`);
+    // ✅ OPTIMIZED: Build redirect URL more efficiently
+    const params = new URLSearchParams({
+      token,
+      role: user.role,
+      name: user.name || 'User',
+      email: user.email,
+      id: user._id.toString()
+    });
+    
+    const redirectUrl = `${FRONTEND_URL}/auth/callback?${params.toString()}`;
+    
+    console.log("🔄 Redirecting to frontend...");
+    console.log('===================\n');
+    
+    // ✅ Use 302 redirect for faster response
+    res.redirect(302, redirectUrl);
   } catch (error) {
-    console.error("❌ Google OAuth callback error:", error);
+    console.error("❌ OAuth callback error:", error);
     res.redirect(`${FRONTEND_URL}/signin?error=oauth_failed`);
   }
 };

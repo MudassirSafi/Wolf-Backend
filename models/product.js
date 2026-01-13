@@ -1,37 +1,31 @@
-// ✅ wolf-backend/models/Product.js - FIXED (No Duplicate Index)
+// wolf-backend/models/product.js - COMPLETE SCHEMA
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Product name is required"],
+      required: true,
       trim: true,
     },
     slug: {
       type: String,
+      required: true,
+      unique: true,
       lowercase: true,
-      trim: true,
-      // ✅ REMOVED: index: true (keeping only schema.index below)
     },
     description: {
       type: String,
-      trim: true,
+      default: '',
     },
     price: {
       type: Number,
-      required: [true, "Product price is required"],
+      required: true,
       min: 0,
     },
     originalPrice: {
       type: Number,
       min: 0,
-    },
-    stock: {
-      type: Number,
-      required: true,
-      min: 0,
-      default: 0,
     },
     discount: {
       type: Number,
@@ -39,171 +33,249 @@ const productSchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
-    images: [
-      {
-        type: String,
-      },
-    ],
     category: {
       type: String,
-      required: [true, "Product category is required"],
-      trim: true,
-      // ✅ REMOVED: index: true
+      required: true,
     },
     subCategory: {
       type: String,
-      trim: true,
-      // ✅ REMOVED: index: true
+      default: '',
     },
     brand: {
       type: String,
-      default: "2Wolf",
-      trim: true,
+      default: '2Wolf',
     },
     sku: {
       type: String,
-      unique: true,
-      sparse: true
+    },
+    modelNumber: {
+      type: String,
+      default: '',
+    },
+    department: {
+      type: String,
+      default: 'Unisex',
+    },
+    images: {
+      type: [String],
+      default: [],
+    },
+    
+    // ✅ CRITICAL: Features array for bullet points
+    features: {
+      type: [String],
+      default: [],
+    },
+    
+    // ✅ CRITICAL: Product details for specifications table
+    productDetails: {
+      type: [{
+        label: {
+          type: String,
+          required: true,
+        },
+        value: {
+          type: String,
+          required: true,
+        }
+      }],
+      default: [],
+    },
+    
+    // Videos array
+    videos: {
+      type: [{
+        url: String,
+        title: String,
+        thumbnail: String,
+        duration: String,
+      }],
+      default: [],
+    },
+    
+    // Colors and variants
+    colors: {
+      type: [{
+        name: String,
+        code: String,
+        image: String,
+      }],
+      default: [],
+    },
+    variants: {
+      type: [{
+        name: String,
+        value: String,
+        priceAdjustment: Number,
+        stock: Number,
+      }],
+      default: [],
+    },
+    
+    stock: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     
     // Basic specifications
-    material: String,
-    size: String,
-    color: String,
-    gender: String,
-    weight: String,
-    dimensions: String,
-    warranty: String,
-    
-    // Electronics specific
-    processor: String,
-    ram: String,
-    storage: String,
-    screenSize: String,
-    
-    // Watch specific
-    movement: String,
-    bandMaterial: String,
-    caseStyle: String,
-    waterResistance: String,
-    
-    // Clothing specific
-    fit: String,
-    pattern: String,
-    heelType: String,
-    closureType: String,
-    
-    // Kitchen specific
-    capacity: String,
-    powerWattage: String,
-    voltage: String,
-    
-    // NEW FIELDS - Amazon style
-    features: [{
-      type: String
-    }],
-    productDetails: [{
-      label: String,
-      value: String
-    }],
-    colors: [{
-      name: String,
-      image: String
-    }],
-    modelNumber: String,
-    department: {
+    material: {
       type: String,
-      default: "Unisex"
+      default: '',
+    },
+    color: {
+      type: String,
+      default: '',
+    },
+    size: {
+      type: String,
+      default: '',
+    },
+    weight: {
+      type: String,
+      default: '',
+    },
+    dimensions: {
+      type: String,
+      default: '',
+    },
+    warranty: {
+      type: String,
+      default: '',
+    },
+    gender: {
+      type: String,
+      default: '',
     },
     
-    // Variants
-    variants: [{
-      name: String,
-      value: String,
-      priceAdjustment: Number,
-      stock: Number
-    }],
+    // Electronics specific
+    processor: {
+      type: String,
+      default: '',
+    },
+    ram: {
+      type: String,
+      default: '',
+    },
+    storage: {
+      type: String,
+      default: '',
+    },
+    screenSize: {
+      type: String,
+      default: '',
+    },
     
+    // Watch specific
+    movement: {
+      type: String,
+      default: '',
+    },
+    bandMaterial: {
+      type: String,
+      default: '',
+    },
+    caseStyle: {
+      type: String,
+      default: '',
+    },
+    waterResistance: {
+      type: String,
+      default: '',
+    },
+    
+    // Clothing specific
+    fit: {
+      type: String,
+      default: '',
+    },
+    pattern: {
+      type: String,
+      default: '',
+    },
+    heelType: {
+      type: String,
+      default: '',
+    },
+    closureType: {
+      type: String,
+      default: '',
+    },
+    
+    // Kitchen/Appliance specific
+    capacity: {
+      type: String,
+      default: '',
+    },
+    powerWattage: {
+      type: String,
+      default: '',
+    },
+    voltage: {
+      type: String,
+      default: '',
+    },
+    
+    // Display flags
     featured: {
       type: Boolean,
       default: false,
-      // ✅ REMOVED: index: true
     },
     bestSeller: {
       type: Boolean,
       default: false,
-      // ✅ REMOVED: index: true
     },
-    
     freeDelivery: {
       type: Boolean,
-      default: false
+      default: false,
     },
     sellingFast: {
       type: Boolean,
-      default: false
+      default: false,
     },
     lowestPrice: {
       type: Boolean,
-      default: false
+      default: false,
     },
     showRecentlySold: {
       type: Boolean,
-      default: false
+      default: false,
     },
     recentlySoldCount: {
       type: Number,
-      default: 0
+      default: 0,
     },
     
+    // Reviews
     rating: {
       type: Number,
-      default: 4,
+      default: 0,
       min: 0,
-      max: 5
+      max: 5,
     },
     reviewCount: {
       type: Number,
-      default: 0
+      default: 0,
     },
+    
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
   },
-  { 
+  {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
   }
 );
 
-// Virtual for discounted price
-productSchema.virtual('discountedPrice').get(function() {
-  if (this.discount > 0) {
-    return this.price - (this.price * this.discount / 100);
-  }
-  return this.price;
-});
-
-// Auto-generate slug from name before saving
-productSchema.pre('save', function(next) {
-  if (this.isModified('name') && !this.slug) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  }
-  next();
-});
-
-// ✅ Create indexes using schema.index() - NO DUPLICATES
-productSchema.index({ name: 'text', description: 'text' });
-productSchema.index({ slug: 1 });
-productSchema.index({ category: 1 });
-productSchema.index({ subCategory: 1 });
-productSchema.index({ category: 1, bestSeller: 1 });
+// Index for better search performance
+productSchema.index({ name: 'text', description: 'text', brand: 'text' });
+productSchema.index({ category: 1, subCategory: 1 });
+productSchema.index({ brand: 1 });
+productSchema.index({ price: 1 });
 productSchema.index({ featured: 1 });
 productSchema.index({ bestSeller: 1 });
 
-export default mongoose.model("Product", productSchema);
+const Product = mongoose.model("Product", productSchema);
+
+export default Product;
